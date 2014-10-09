@@ -1,11 +1,11 @@
 #!/usr/local/bin/lua
 --
--- LuaRaw2Xml
+-- FactorioLoader
 -- (c) 2013-2014 by ßilk (Alex Aulbach)
 --
 -- Convert Lua-data-structure to XML
 -- Parameters:
--- LuaRaw2Xml.lua [output=xml|lua|json] path [path...]
+-- FactorioLoader.lua [output=xml|lua|json] -p path-to-data-directory [path...]
 --
 -- By default, the first path MUST be the factrio-core-data-directory, then base and other modules.
 -- Example: factorio/Contents/data/core factorio/Contents/data/base
@@ -121,48 +121,17 @@ function toXml(root)
     io.write("\n</factorio>");
 end
 
---- sorting in lua is much more complicated than this, sorry
-local function sortData(unsortedData)
-    assert(true, "Sorry, but option 'sort' is currently not working"); -- sort not working yet
---[[
-    local k,v
-    local newv
-    local temp = {}
-    local sortedData = {}
-
-    if type(unsortedData) ~= 'table' then
-        return unsortedData
-        -- is scalar
-    end
-
-    -- sort table by key
-    for k,v in pairs(unsortedData) do
-        if (type(k) == 'number') then k = string.format('%s', k) end
-        newv = sortData(v)
-        temp[#temp+1] = {key = k, value = newv}
-    end
-
-    table.sort(temp, function(a, b) return a.key < b.key end)
-
-    for _,v in pairs(temp) do
-        sortedData[v.key] = v.value
-    end
-
-    return sortedData
-]]
-end
-
 --------------------------------------------------------------------
 --- Read the arguments
 
 --- set defaults
 local options = {
     output = 'xml',
---    sort = false, -- sort is not working yet
     paths = { "factorio/Contents/data/core", "factorio/Contents/data/base" }
 }
 
 --- read paths and other arguments ("name=value" - style)
+-- uses the global options-variable, see above.
 function parseArgs()
     local a
     local m, n
@@ -178,6 +147,7 @@ function parseArgs()
             end
             options[m] = n
         else
+            -- if none argument given assume it as path
             -- assume, that if one path is given remove default paths
             if  overwrite then
                 options.paths = {}
@@ -188,28 +158,38 @@ function parseArgs()
     end
 end
 
+function removeFunctionsFromData()
+    local tag, val
+    for tag, val in pairs(data) do
+        if type(val) == 'function' then
+            data[tag] = 'function() { ' .. inspect(val) .. ' }'
+        end
+    end
+end
+
 
 -------------------------------------------------------------------------------
+--- begin
 
+-- load needed libs
 require("io")
-inspect = require('lib/inspect')
-JSON = (loadfile "lib/JSON.lua")() -- one-time load of the routines
+inspect = require('library/inspect')
+JSON = (loadfile "library/JSON.lua")() -- one-time load of the routines
 
 parseArgs()
 
--- set "data"
-Loader = require("loader")
+-- set global "data"-variable
+Loader = require("library/loader/loader")
 Loader.load_data(options.paths)
 
--- if options.sort then
---     data.raw = sortData(data.raw)
--- end
+-- unset functions in the struct
+removeFunctionsFromData()
 
 if options.output == 'xml' then
     print(toXml(data))
 elseif options.output == 'json' then
-    print(JSON:encode_pretty(data.raw))
-elseif options.output == 'lua' then
-    print(inspect(data.raw))
+    print(JSON:encode_pretty(data))
+elseif options.output == 'lua' or options.output == 'raw' then
+    print(inspect(data))
 end
 

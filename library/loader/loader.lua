@@ -2,7 +2,7 @@ local Loader = {}
 
 Loader.path_substitutions = {}
 
-JSON = (loadfile "lib/JSON.lua")() -- one-time load of the routines
+JSON = (loadfile "library/JSON.lua")() -- one-time load of the routines, this is used to load the info.json-file
 
 --- Loads Factorio data files from a list of mods.
 -- executes all module loaders (data.lua),
@@ -71,25 +71,29 @@ function Loader.unifyPaths(paths)
 end
 
 function Loader.dependenciesOrder(module_info)
-    -- mindestens ein modul ohne abhängkeit
+    -- minimum one module must be without dependencies
     local order = {}
     local key,val
     local o
     local numinfo = 0
     local dep
 
+    -- count number of modules
     for key,val in pairs(module_info) do
         numinfo = numinfo + 1
     end
 
+    -- search for the modules without dependencies and put them into the order list
     for key,val in pairs(module_info) do
-        -- add dependency, if no dependency and not added yet
         if #val['dependencies'] == 0 then
+            -- link order-number and name and path together
             order[#order + 1] = val['name']
             order[val['name']] = val['localPath']
         end
     end
 
+    -- go as long through the modules, until all dependencies found
+    -- (#order is the number of numeric indices in the order-list)
     while #order < numinfo do
         for key,val in pairs(module_info) do
             for o = 1, #order do
@@ -118,6 +122,7 @@ end
 
 --- add the info.json as to the data-struct, if available
 -- converts the json into lua-data
+-- adds the localPath to the module info, which is the relative path of the module
 function Loader.addModuleInfo(path, module_info)
     local basename = Loader.basename(path)
     module_info[basename] = JSON:decode(Loader.loadModuleInfo(path))
@@ -125,6 +130,7 @@ function Loader.addModuleInfo(path, module_info)
     module_info[basename]['localPath'] = path
 end
 
+--- add the version information to the core module by searching in the base module
 function Loader.moduleInfoCompatibilityPatches(module_info)
     local k, v, version
     for k,v in pairs(module_info) do
