@@ -158,6 +158,7 @@ function parseArgs()
     end
 end
 
+--- The defined lua functions in the data-struct are useless for printing, so they are replaced
 function removeFunctionsFromData()
     local tag, val
     for tag, val in pairs(data) do
@@ -180,7 +181,7 @@ parseArgs()
 
 -- set global "data"-variable
 Loader = require("library/loader/loader")
-Loader.load_data(options.paths)
+Loader.load_data(options.paths) -- this calls the
 
 -- unset functions in the struct
 removeFunctionsFromData()

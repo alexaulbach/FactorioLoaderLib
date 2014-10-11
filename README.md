@@ -32,8 +32,8 @@ XML has the advantage of having tools, which could be quite useful (xpath for ex
 
 #### Synopsis ####
 FactorioLoader.lua path [path...] [output=xml|raw|lua|json]
-example:
 
+Example:
  > ./FactorioLoader.lua /Applications/factorio.app/Contents/data/base /Applications/factorio.app/Contents/data/core/ >tmpdata/factorio-data.xml
 
 --> outputs the core and base modules as XML-structure and stores it into tmpdata/factorio-data.xml
@@ -43,6 +43,7 @@ example:
 - seems to work only on MacOS (?).
 
 ### Planned ###
+- Tests.
 - Work with packed modules.
 - Add arguments to see, which module adds which entity to the data.
 - Make it run with all platforms.
