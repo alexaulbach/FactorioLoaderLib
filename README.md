@@ -44,8 +44,10 @@ Example:
 
 ### Planned ###
 - Tests.
+- An option to expand the pictures/animation-filename prefixes for all modules with the full/relative path.
 - Work with packed modules.
 - Add arguments to see, which module adds which entity to the data.
 - Make it run with all platforms.
 - List all installed modules.
 - Find the install and userdata-directories automatic on all platforms / no full paths are needed.
+- Sort the output to make it better diff-able (quite complex)
