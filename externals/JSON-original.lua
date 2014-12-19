@@ -693,7 +693,7 @@ end
 -- Encode
 --
 local encode_value -- must predeclare because it calls itself
-function encode_value(self, value, parents, etc, indent, smallbutpretty) -- non-nil indent means pretty-printing
+function encode_value(self, value, parents, etc, indent) -- non-nil indent means pretty-printing
 
 if value == nil then
     return 'null'
@@ -754,7 +754,7 @@ else
         --
         local ITEMS = { }
         for i = 1, maximum_number_key do
-            table.insert(ITEMS, encode_value(self, T[i], parents, etc, indent, smallbutpretty))
+            table.insert(ITEMS, encode_value(self, T[i], parents, etc, indent))
         end
 
         if indent then
@@ -769,26 +769,7 @@ else
         --
         local TT = map or T
 
-        if smallbutpretty then
-
-            local KEYS = { }
-            local max_key_length = 0
-            for _, key in ipairs(object_keys) do
-                local encoded = encode_value(self, tostring(key), parents, etc, "", smallbutpretty)
-                table.insert(KEYS, encoded)
-            end
-            local key_indent = indent .. "    "
-            local subtable_indent = indent .. string.rep(" ", max_key_length + 2)
-            local FORMAT = "%s%" .. string.format("%d", max_key_length) .. "s: %s"
-
-            local COMBINED_PARTS = { }
-            for i, key in ipairs(object_keys) do
-                local encoded_val = encode_value(self, TT[key], parents, etc, subtable_indent, smallbutpretty)
-                table.insert(COMBINED_PARTS, string.format(FORMAT, key_indent, KEYS[i], encoded_val))
-            end
-            result_value = "{\n" .. table.concat(COMBINED_PARTS, ",\n") .. "\n" .. indent .. "  }"
-
-        elseif indent then
+        if indent then
 
             local KEYS = { }
             local max_key_length = 0
@@ -836,21 +817,14 @@ function OBJDEF:encode(value, etc)
     if type(self) ~= 'table' or self.__index ~= OBJDEF then
         OBJDEF:onEncodeError("JSON:encode must be called in method format", etc)
     end
-    return encode_value(self, value, {}, etc, nil, nil)
+    return encode_value(self, value, {}, etc, nil)
 end
 
 function OBJDEF:encode_pretty(value, etc)
     if type(self) ~= 'table' or self.__index ~= OBJDEF then
         OBJDEF:onEncodeError("JSON:encode_pretty must be called in method format", etc)
     end
-    return encode_value(self, value, {}, etc, "", nil)
-end
-
-function OBJDEF:encode_smallbutpretty(value, etc)
-    if type(self) ~= 'table' or self.__index ~= OBJDEF then
-        OBJDEF:onEncodeError("JSON:encode_pretty must be called in method format", etc)
-    end
-    return encode_value(self, value, {}, etc, "", true)
+    return encode_value(self, value, {}, etc, "")
 end
 
 function OBJDEF.__tostring()

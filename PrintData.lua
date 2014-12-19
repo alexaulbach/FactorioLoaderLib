@@ -202,7 +202,7 @@ rewriteFunctionsFromData()
 if options.output == 'xml' then
     print(toXml(data))
 elseif options.output == 'json' then
-    print(JSON:encode_pretty(data))
+    print(JSON:encode_smallbutpretty(data))
 elseif options.output == 'lua' or options.output == 'raw' then
     print(inspect(data))
 end
