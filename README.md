@@ -31,10 +31,10 @@ XML has the advantage of having tools, which could be quite useful (xpath for ex
 --> outputs all structures about steam engine
 
 #### Synopsis ####
-FactorioLoader.lua path [path...] [output=xml|raw|lua|json]
+PrintData.lua path [path...] [output=xml|raw|lua|json]
 
 Example:
- > ./FactorioLoader.lua /Applications/factorio.app/Contents/data/base /Applications/factorio.app/Contents/data/core/ >tmpdata/factorio-data.xml
+ > ./PrintData.lua /Applications/factorio.app/Contents/data/base /Applications/factorio.app/Contents/data/core/ >tmpdata/factorio-data.xml
 
 --> outputs the core and base modules as XML-structure and stores it into tmpdata/factorio-data.xml
 

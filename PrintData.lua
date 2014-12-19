@@ -1,14 +1,15 @@
 #!/usr/local/bin/lua
 --
--- FactorioLoader
+-- PrintData
 -- (c) 2013-2014 by ßilk (Alex Aulbach)
 --
 -- Convert Lua-data-structure to XML
 -- Parameters:
--- FactorioLoader.lua [output=xml|lua|json] -p path-to-data-directory [path...]
+-- PrintData.lua [output=xml|lua|json] -p path-to-data-directory [path...]
 --
 -- By default, the first path MUST be the factrio-core-data-directory, then base and other modules.
--- Example: factorio/Contents/data/core factorio/Contents/data/base
+-- Example:
+--  ./PrintData.lua factorio/Contents/data/core factorio/Contents/data/base
 -- In this example factorio is a symlink to the factorio install-dir.
 --
 -- What it does?
@@ -159,7 +160,7 @@ function parseArgs()
 end
 
 --- The defined lua functions in the data-struct are useless for printing, so they are replaced
-function removeFunctionsFromData()
+function rewriteFunctionsFromData()
     local tag, val
     for tag, val in pairs(data) do
         if type(val) == 'function' then
@@ -174,18 +175,30 @@ end
 
 -- load needed libs
 require("io")
-inspect = require('library/inspect')
-JSON = (loadfile "library/JSON.lua")() -- one-time load of the routines
+inspect = require('externals/inspect')
+JSON = (loadfile "externals/JSON.lua")() -- one-time load of the routines
 
 parseArgs()
 
--- set global "data"-variable
-Loader = require("library/loader/loader")
-Loader.load_data(options.paths) -- this calls the
+-- load the factorioloader
+Loader = require("library/factorioloader")
 
--- unset functions in the struct
-removeFunctionsFromData()
+-- call load_data() with the paths as arguments
+-- what happens here is, that this will call for every mod the "data.lua"
+-- in the right order (looks for the dependencies in info.json!)
+Loader.load_data(options.paths)
 
+
+-- Now the global "data"-variable is set!
+-- The loader adds an own "paragraph" named "modules",
+-- which contains all known informations about the
+-- loaded modules!
+
+
+-- remove executeable functions in the struct, cause they are not needed for printing
+rewriteFunctionsFromData()
+
+-- and print the data
 if options.output == 'xml' then
     print(toXml(data))
 elseif options.output == 'json' then

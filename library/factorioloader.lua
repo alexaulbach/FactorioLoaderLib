@@ -2,7 +2,7 @@ local Loader = {}
 
 Loader.path_substitutions = {}
 
-JSON = (loadfile "library/JSON.lua")() -- one-time load of the routines, this is used to load the info.json-file
+JSON = (loadfile "externals/JSON.lua")() -- needed for the info.json-file
 
 --- Loads Factorio data files from a list of mods.
 -- executes all module loaders (data.lua),
