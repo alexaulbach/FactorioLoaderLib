@@ -206,7 +206,7 @@ rewriteFunctionsFromData()
 if options.output == 'xml' then
     print(toXml(data))
 elseif options.output == 'json' then
-    print(JSON:encode_smallbutpretty(data))
+    print(JSON:encode(data, nil, {pretty = true, indent = '  '}))
 elseif options.output == 'lua' or options.output == 'raw' then
     print(inspect(data))
 end
