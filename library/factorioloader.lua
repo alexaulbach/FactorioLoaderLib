@@ -94,7 +94,8 @@ function Loader.dependenciesOrder(module_info)
 
     -- go as long through the modules, until all dependencies found
     -- (#order is the number of numeric indices in the order-list)
-    while #order < numinfo do
+    local loopLimit = 100
+    while #order < numinfo and loopLimit > 0 do
         for key,val in pairs(module_info) do
             for o = 1, #order do
                 -- add dependency, if dependend module is already in the order list
@@ -105,9 +106,12 @@ function Loader.dependenciesOrder(module_info)
                     end
                 end
             end
-
         end
+        loopLimit = loopLimit - 1
     end
+
+    assert(loopLimit > 0, "Couldn't resolve all dependencies (see included json.info), reached loopLimit. (core-mod not included?)")
+
     return order
 end
 
