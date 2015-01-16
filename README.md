@@ -11,41 +11,43 @@ This has/will have the following features:
 
 ## Usage ##
 
-### use as library ###
 This is intended to be used inside of your own Lua-script (or any other program) to get the basic-data you need to make your own calculations with it!
 Please follow the interface-instructions in the docs/-folder.
 
 If you want to use that in your own project, just use the library/loader/-folder as external into your project.
 
-## use the delivered interface ##
+## Generators ##
 
-To see how it works (or to generate useable output), the library has an interface, which converts the data to:
+To see and test, how the lib works (or to generate useable output), the library has included some generators.
+
+### generators/PrintData.lua ###
+
+Interface, which converts the data to:
 - XML
 - Lua-Code
 - json
 
 XML has the advantage of having tools, which could be quite useful (xpath for example) and readers (your favorite browser for example), which makes the structure readable. Example:
 
- > xpath generated-loader-file //steam-engine
+ > xpath tmpdata/factorio-data-0.11.11.xml //steam-engine
 
---> outputs all structures about steam engine
+--> outputs all structures about steam engine, see example data-files in tmpdata!
 
 #### Synopsis ####
 PrintData.lua path [path...] [output=xml|raw|lua|json]
 
 Example:
- > ./PrintData.lua /Applications/factorio.app/Contents/data/base /Applications/factorio.app/Contents/data/core/ >tmpdata/factorio-data.xml
+ > generators/PrintData.lua /Applications/factorio.app/Contents/data/base /Applications/factorio.app/Contents/data/core/ >tmpdata/factorio-data.xml
 
 --> outputs the core and base modules as XML-structure and stores it into tmpdata/factorio-data.xml
 
-### Known issues ###
+## Known issues ##
 - doesn't work with packed mods.
-- seems to work only on MacOS (?).
 
-### Planned ###
+## Planned ##
+- Work with packed modules.
 - Tests.
 - An option to expand the pictures/animation-filename prefixes for all modules with the full/relative path.
-- Work with packed modules.
 - Add arguments to see, which module adds which entity to the data.
 - Make it run with all platforms.
 - List all installed modules.

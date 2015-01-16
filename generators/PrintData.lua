@@ -1,24 +1,27 @@
 #!/usr/local/bin/lua
 --
 -- PrintData
--- (c) 2013-2014 by ßilk (Alex Aulbach)
+-- (c) 2013-2015 by ßilk (Alex Aulbach)
 --
 -- Convert Lua-data-structure to XML
+--
 -- Parameters:
 -- PrintData.lua [output=xml|lua|json] -p path-to-data-directory [path...]
 --
 -- By default, the first path MUST be the factrio-core-data-directory, then base and other modules.
 -- Example:
---  ./PrintData.lua factorio/Contents/data/core factorio/Contents/data/base
+--  generators/PrintData.lua factorio/Contents/data/core factorio/Contents/data/base
 -- In this example factorio is a symlink to the factorio install-dir.
 --
 -- What it does?
 --
--- 1. Calls the factorio loaders to fill in the "raw" data-structure.
--- 2. Adds a "modules" data-structure, which reflects the loaded modules
--- 3. if output method is lua, run through the data structure.
--- 3.a Every "iterating" data-structure (1,2,3..., index is number) is replaced with a "iterator"-xml.
--- 4. outputs a valid xml to stdout
+-- 1. Checks the dependencies of the given, and resorts the loading order
+-- 2  Calls the factorio loaders to fill in the "raw" data-structure. This part directly executes factorio lua-code.
+-- 3. Adds a "modules" data-structure, which reflects the loaded modules and order
+-- 4. Replace prototype functions and output data
+--
+-- For output=xml:
+-- Every "iterating" data-structure (1,2,3..., index is number) is replaced with an "iterator"-xml.
 --
 
 ---------------------------------------------------------------
@@ -174,7 +177,8 @@ end
 --- begin
 
 -- load needed libs
-require("io")
+require('io')
+-- load included external libs
 inspect = require('externals/inspect')
 JSON = (loadfile "externals/JSON.lua")() -- one-time load of the routines
 
