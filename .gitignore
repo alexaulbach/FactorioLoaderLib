@@ -2,3 +2,4 @@ factorio/
 .idea
 pages/
 .DS_Store
+*.swp

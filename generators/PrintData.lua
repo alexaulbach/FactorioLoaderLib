@@ -130,8 +130,9 @@ end
 
 --- set defaults
 local options = {
-    output = 'xml',
-    paths = { "factorio/Contents/data/core", "factorio/Contents/data/base" }
+    output = 'json',
+    game_path = ".",
+    mod_path = os.getenv("APPDATA") .. "/Factorio/mods"
 }
 
 --- read paths and other arguments ("name=value" - style)
@@ -153,11 +154,7 @@ function parseArgs()
         else
             -- if none argument given assume it as path
             -- assume, that if one path is given remove default paths
-            if  overwrite then
-                options.paths = {}
-                overwrite = false
-            end
-            options.paths[#options.paths + 1] = a
+            options.game_path = a
         end
     end
 end
@@ -190,7 +187,7 @@ Loader = require("library/factorioloader")
 -- call load_data() with the paths as arguments
 -- what happens here is, that this will call for every mod the "data.lua"
 -- in the right order (looks for the dependencies in info.json!)
-Loader.load_data(options.paths)
+Loader.load_data(options.game_path, options.mod_path)
 
 
 -- Now the global "data"-variable is set!
@@ -204,10 +201,10 @@ rewriteFunctionsFromData()
 
 -- and print the data
 if options.output == 'xml' then
-    print(toXml(data))
+    print(toXml(data.raw))
 elseif options.output == 'json' then
-    print(JSON:encode(data, nil, {pretty = true, indent = '  '}))
+    print(JSON:encode(data.raw, nil, {pretty = true, indent = '  '}))
 elseif options.output == 'lua' or options.output == 'raw' then
-    print(inspect(data))
+    print(inspect(data.raw))
 end
 
