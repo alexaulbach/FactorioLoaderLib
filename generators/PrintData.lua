@@ -1,4 +1,4 @@
-#!/usr/local/bin/lua
+#!/usr/bin/env lua
 --
 -- PrintData
 -- (c) 2013-2015 by ßilk (Alex Aulbach)
