@@ -143,7 +143,7 @@ function parseArgs()
     local overwrite = true
     for i = 1, #arg do
         a = arg[i]
-        m, n = a:match('(%a+)=(%a+)')
+        m, n = a:match('([^=]+)=([^=]+)')
         if m then
             if n == 'true' then
                 n = true
