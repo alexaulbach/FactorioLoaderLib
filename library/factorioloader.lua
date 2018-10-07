@@ -6,6 +6,8 @@ require("lfs")
 require("zip")
 
 defines = require("library/defines")
+local SettingLoader = require("library/settingloader")
+mods = {}
 
 function endswith(s, sub)
     return string.sub(s, -string.len(sub)) == sub
@@ -28,18 +30,15 @@ function Loader.load_data(game_path, mod_dir)
     local module_info = {}
     local order
 
-    local f = io.open(mod_dir .. "/mod-settings.json")
-    local s = f:read("*a")
-    settings = JSON:decode(s)
-    f:close()
+    settings = SettingLoader.load(mod_dir .. "/mod-settings.dat")
 
     for i = 1, #paths do
         Loader.addModuleInfo(paths[i], module_info)
     end
-    local mods = Loader.getModList(mod_dir)
+    local modlist = Loader.getModList(mod_dir)
     for filename in lfs.dir(mod_dir) do
         local mod_name = string.gsub(filename, "(.+)_[^_]+", "%1")
-        if mods[mod_name] ~= nil then
+        if modlist[mod_name] ~= nil then
             if endswith(filename, ".zip") then
                 local info = ZipModule.new(mod_dir, string.sub(filename, 1, -5))
                 module_info[mod_name] = info
@@ -52,6 +51,10 @@ function Loader.load_data(game_path, mod_dir)
 
     order = Loader.dependenciesOrder(module_info)
     showtable(order)
+
+    for _, module_name in ipairs(order) do
+        mods[module_name] = module_info[module_name].version
+    end
 
     -- loop over all order
     local inited = false
@@ -212,7 +215,7 @@ function ZipModLoader:__call(name)
     end
     local content = file:read("*a")
     file:close()
-    return loadstring(content, filename)
+    return load(content, filename)
 end
 function ZipModLoader:close()
     self.archive:close()
@@ -240,14 +243,14 @@ function ZipModule.new(dirname, mod_name)
 end
 function ZipModule.run(self, filename)
     local loader = ZipModLoader.new(self.mod_path, self.mod_name)
-    table.insert(package.loaders, 1, loader)
+    table.insert(package.searchers, 1, loader)
     local mod = loader(filename)
     if type(mod) == "string" then
         loader:close()
         return
     end
     if mod ~= nil then mod() end
-    table.remove(package.loaders, 1)
+    table.remove(package.searchers, 1)
     loader:close()
 end
 
