@@ -1,4 +1,4 @@
-#!/usr/local/bin/lua
+#!/usr/bin/env lua
 --
 -- PrintData
 -- (c) 2013-2015 by ßilk (Alex Aulbach)
@@ -132,7 +132,7 @@ end
 local options = {
     output = 'json',
     game_path = ".",
-    mod_path = os.getenv("APPDATA") .. "/Factorio/mods"
+    mod_path = (os.getenv("APPDATA") or ".") .. "/Factorio/mods"
 }
 
 --- read paths and other arguments ("name=value" - style)
@@ -143,7 +143,7 @@ function parseArgs()
     local overwrite = true
     for i = 1, #arg do
         a = arg[i]
-        m, n = a:match('(%a+)=(%a+)')
+        m, n = a:match('([^=]+)=(.+)')
         if m then
             if n == 'true' then
                 n = true
