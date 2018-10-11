@@ -1,6 +1,6 @@
 local Loader = {}
 
-JSON = (loadfile "externals/JSON.lua")() -- needed for the info.json-file
+JSON = require("externals/JSON") -- needed for the info.json-file
 
 require("lfs")
 require("zip")
