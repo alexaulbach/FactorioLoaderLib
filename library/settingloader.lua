@@ -68,7 +68,6 @@ function SettingLoader.readPropertyTree(f, depth)
 end
 
 function SettingLoader.load(filename)
-    log(filename)
     local f = io.open(filename, "rb")
     local version = readAll(f, 8)
     local settings = SettingLoader.readPropertyTree(f, 0)
