@@ -50,7 +50,6 @@ function Loader.load_data(game_path, mod_dir)
     module_info = Loader.moduleInfoCompatibilityPatches(module_info)
 
     order = Loader.dependenciesOrder(module_info)
-    showtable(order)
 
     for _, module_name in ipairs(order) do
         mods[module_name] = module_info[module_name].version
