@@ -245,6 +245,7 @@ function ZipModule.run(self, filename)
     table.insert(package.searchers, 1, loader)
     local mod = loader(filename)
     if type(mod) == "string" then
+        table.remove(package.searchers, 1)
         loader:close()
         return
     end
