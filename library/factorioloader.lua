@@ -169,7 +169,12 @@ end
 
 function Loader.dependenciesOrder(module_info)
     local order = {}
+    local mod_names = {}
     for name, _ in pairs(module_info) do
+        table.insert(mod_names, name)
+    end
+    table.sort(mod_names)
+    for _, name in ipairs(mod_names) do
         local suborder = getDeps(module_info, name)
         mergeOrders(order, suborder)
     end
