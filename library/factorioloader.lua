@@ -178,7 +178,12 @@ end
 
 function Loader.dependenciesOrder(module_info)
     local order = {}
+    local mod_names = {}
     for name, _ in pairs(module_info) do
+        table.insert(mod_names, name)
+    end
+    table.sort(mod_names)
+    for _, name in ipairs(mod_names) do
         local suborder = getDeps(module_info, name)
         mergeOrders(order, suborder)
     end
@@ -232,19 +237,20 @@ end
 
 local ZipModLoader = {}
 ZipModLoader.__index = ZipModLoader
-function ZipModLoader.new(dirname, mod_name)
+function ZipModLoader.new(dirname, mod_name, arc_subfolder)
     local filename = dirname .. mod_name .. ".zip"
     local arc = zip.open(filename)
     local mod = {
         mod_name = mod_name .. "/",
         archive = arc,
         archive_name = filename,
+        arc_subfolder = arc_subfolder,
     }
     return setmetatable(mod, ZipModLoader)
 end
 function ZipModLoader:__call(name)
     name = string.gsub(name, "%.", "/")
-    local filename = self.mod_name .. name .. ".lua"
+    local filename = self.arc_subfolder .. name .. ".lua"
     local file = self.archive:open(filename)
     if not file then
         return "Not found: " .. filename .. " in " .. self.archive_name
@@ -268,17 +274,27 @@ function ZipModule.new(dirname, mod_name)
     end
     local filename = dirname .. mod_name .. ".zip"
     local arc = zip.open(filename)
-    local info_filename = mod_name .. "/info.json"
-    local f = arc:open(mod_name .. "/info.json")
+    local arc_subfolder
+
+    for file in arc:files() do
+        local idx_start, _ = string.find(file.filename, "info.json", 1, true)
+        if idx_start ~= nil then
+            arc_subfolder = string.sub(file.filename, 1, idx_start-1)
+            break
+        end
+    end
+    local info_filename = arc_subfolder .. "info.json"
+    local f = arc:open(info_filename)
     local info = JSON:decode(f:read("*a"))
     info.mod_path = dirname
     info.mod_name = mod_name
     info.zip_path = filename
+    info.arc_subfolder = arc_subfolder
     setmetatable(info, ZipModule)
     return info
 end
 function ZipModule.run(self, filename)
-    local loader = ZipModLoader.new(self.mod_path, self.mod_name)
+    local loader = ZipModLoader.new(self.mod_path, self.mod_name, self.arc_subfolder)
     table.insert(package.searchers, 1, loader)
     local mod = loader(filename)
     if type(mod) == "string" then
