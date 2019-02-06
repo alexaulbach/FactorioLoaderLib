@@ -308,7 +308,7 @@ function ZipModule.run(self, filename)
 end
 function ZipModule:locale(locales)
     local arc = zip.open(self.zip_path)
-    local pattern = "^" .. self.arc_subfolder .. "/locale/([^/]+)/.+%.cfg$"
+    local pattern = "^" .. self.arc_subfolder .. "locale/([^/]+)/.+%.cfg$"
     for info in arc:files() do
         local locale = info.filename:match(pattern)
         if locale ~= nil then
