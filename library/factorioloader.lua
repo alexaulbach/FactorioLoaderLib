@@ -123,7 +123,7 @@ function dep_base(dep)
 end
 
 function Loader.getModList(mod_dir)
-    local f = io.open(mod_dir .. "/mod-list.json")
+    local f = assert(io.open(mod_dir .. "/mod-list.json"))
     local s = f:read("*a")
     local modlist = JSON:decode(s)
     f:close()
@@ -239,7 +239,7 @@ local ZipModLoader = {}
 ZipModLoader.__index = ZipModLoader
 function ZipModLoader.new(dirname, mod_name, arc_subfolder)
     local filename = dirname .. mod_name .. ".zip"
-    local arc = zip.open(filename)
+    local arc = assert(zip.open(filename))
     local mod = {
         mod_name = mod_name .. "/",
         archive = arc,
@@ -273,7 +273,7 @@ function ZipModule.new(dirname, mod_name)
         dirname = dirname .. "/"
     end
     local filename = dirname .. mod_name .. ".zip"
-    local arc = zip.open(filename)
+    local arc = assert(zip.open(filename))
     local arc_subfolder
 
     for file in arc:files() do
