@@ -224,7 +224,7 @@ function Module:locale(locales)
                 for filename in lfs.dir(d) do
                     if filename ~= "." and filename ~= ".." then
                         if filename:sub(-4):lower() == ".cfg" then
-                            local f = io.open(d .. "/" .. filename, "r")
+                            local f = assert(io.open(d .. "/" .. filename, "r"))
                             CFGParser.parse(f, locale_table)
                             f:close()
                         end
@@ -307,7 +307,7 @@ function ZipModule.run(self, filename)
     loader:close()
 end
 function ZipModule:locale(locales)
-    local arc = zip.open(self.zip_path)
+    local arc = assert(zip.open(self.zip_path))
     local pattern = "^" .. self.arc_subfolder .. "locale/([^/]+)/.+%.cfg$"
     for info in arc:files() do
         local locale = info.filename:match(pattern)
