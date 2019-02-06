@@ -6,6 +6,7 @@ require("lfs")
 require("zip")
 
 defines = require("library/defines")
+local CFGParser = require("library/cfgparser")
 local SettingLoader = require("library/settingloader")
 mods = {}
 
@@ -55,6 +56,13 @@ function Loader.load_data(game_path, mod_dir)
         mods[module_name] = module_info[module_name].version
     end
 
+    -- load locale data
+    local locales = {}
+    for _, module_name in ipairs(order) do
+        local info = module_info[module_name]
+        info:locale(locales)
+    end
+
     -- loop over all order
     local inited = false
     for _, filename in ipairs(filenames) do
@@ -87,6 +95,7 @@ function Loader.load_data(game_path, mod_dir)
         new_info[module_name] = module_info[module_name]
     end
     data.raw['module_info'] = new_info
+    return locales
 end
 
 function showtable(t, indent)
@@ -169,7 +178,12 @@ end
 
 function Loader.dependenciesOrder(module_info)
     local order = {}
+    local mod_names = {}
     for name, _ in pairs(module_info) do
+        table.insert(mod_names, name)
+    end
+    table.sort(mod_names)
+    for _, name in ipairs(mod_names) do
         local suborder = getDeps(module_info, name)
         mergeOrders(order, suborder)
     end
@@ -192,22 +206,51 @@ function Module:run(filename)
     dofile(file_path)
     package.path = old_path
 end
+function Module:locale(locales)
+    local locale_dir = self.localPath .. "/locale"
+    if lfs.attributes(locale_dir, "mode") ~= "directory" then
+        return
+    end
+    for locale in lfs.dir(locale_dir) do
+        if locale ~= "." and locale ~= ".." then
+            local d = locale_dir .. "/" .. locale
+            -- ignore non-directories
+            if lfs.attributes(d, "mode") == "directory" then
+                local locale_table = locales[locale]
+                if locale_table == nil then
+                    locale_table = {}
+                    locales[locale] = locale_table
+                end
+                for filename in lfs.dir(d) do
+                    if filename ~= "." and filename ~= ".." then
+                        if filename:sub(-4):lower() == ".cfg" then
+                            local f = io.open(d .. "/" .. filename, "r")
+                            CFGParser.parse(f, locale_table)
+                            f:close()
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
 
 local ZipModLoader = {}
 ZipModLoader.__index = ZipModLoader
-function ZipModLoader.new(dirname, mod_name)
+function ZipModLoader.new(dirname, mod_name, arc_subfolder)
     local filename = dirname .. mod_name .. ".zip"
     local arc = assert(zip.open(filename))
     local mod = {
         mod_name = mod_name .. "/",
         archive = arc,
         archive_name = filename,
+        arc_subfolder = arc_subfolder,
     }
     return setmetatable(mod, ZipModLoader)
 end
 function ZipModLoader:__call(name)
     name = string.gsub(name, "%.", "/")
-    local filename = self.mod_name .. name .. ".lua"
+    local filename = self.arc_subfolder .. name .. ".lua"
     local file = self.archive:open(filename)
     if not file then
         return "Not found: " .. filename .. " in " .. self.archive_name
@@ -231,17 +274,27 @@ function ZipModule.new(dirname, mod_name)
     end
     local filename = dirname .. mod_name .. ".zip"
     local arc = assert(zip.open(filename))
-    local info_filename = mod_name .. "/info.json"
-    local f = arc:open(mod_name .. "/info.json")
+    local arc_subfolder
+
+    for file in arc:files() do
+        local idx_start, _ = string.find(file.filename, "info.json", 1, true)
+        if idx_start ~= nil then
+            arc_subfolder = string.sub(file.filename, 1, idx_start-1)
+            break
+        end
+    end
+    local info_filename = arc_subfolder .. "info.json"
+    local f = arc:open(info_filename)
     local info = JSON:decode(f:read("*a"))
     info.mod_path = dirname
     info.mod_name = mod_name
     info.zip_path = filename
+    info.arc_subfolder = arc_subfolder
     setmetatable(info, ZipModule)
     return info
 end
 function ZipModule.run(self, filename)
-    local loader = ZipModLoader.new(self.mod_path, self.mod_name)
+    local loader = ZipModLoader.new(self.mod_path, self.mod_name, self.arc_subfolder)
     table.insert(package.searchers, 1, loader)
     local mod = loader(filename)
     if type(mod) == "string" then
@@ -252,6 +305,24 @@ function ZipModule.run(self, filename)
     if mod ~= nil then mod() end
     table.remove(package.searchers, 1)
     loader:close()
+end
+function ZipModule:locale(locales)
+    local arc = zip.open(self.zip_path)
+    local pattern = "^" .. self.arc_subfolder .. "locale/([^/]+)/.+%.cfg$"
+    for info in arc:files() do
+        local locale = info.filename:match(pattern)
+        if locale ~= nil then
+            local locale_table = locales[locale]
+            if locale_table == nil then
+                locale_table = {}
+                locales[locale] = locale_table
+            end
+            local f = arc:open(info.filename)
+            CFGParser.parse(f, locale_table)
+            f:close()
+        end
+    end
+    arc:close()
 end
 
 --- add the info.json as to the data-struct, if available
