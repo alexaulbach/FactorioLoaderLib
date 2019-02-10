@@ -69,6 +69,9 @@ end
 
 function SettingLoader.load(filename)
     local f = io.open(filename, "rb")
+    if(f == nil) then
+        return {}
+    end
     local version = readAll(f, 8)
     local settings = SettingLoader.readPropertyTree(f, 0)
     f:close()
