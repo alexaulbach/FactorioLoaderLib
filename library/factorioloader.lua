@@ -159,6 +159,10 @@ local function getDeps(module_info, name)
     if mod.deps then
         return mod.deps
     end
+    if not mod.dependencies then
+        -- no dependencies were declared in info.json
+        mod.dependencies = {}
+    end
     local deps = {}
     --table.insert(deps, mod)
     for _, raw_dep in ipairs(mod.dependencies) do
