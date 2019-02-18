@@ -115,7 +115,7 @@ end
 
 function dep_base(dep)
     dep = string.gsub(dep, "^%?%s+", "")
-    local i = string.find(dep, " ")
+    local i = string.find(dep, "%s*[=><].*")
     if i == nil then
         return dep
     end
