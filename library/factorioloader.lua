@@ -6,6 +6,7 @@ require("lfs")
 require("zip")
 
 defines = require("library/defines")
+serpent = require("externals/serpent")
 local CFGParser = require("library/cfgparser")
 local SettingLoader = require("library/settingloader")
 mods = {}
