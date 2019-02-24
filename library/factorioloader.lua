@@ -19,6 +19,14 @@ function log(s)
     io.stderr:write(s .. "\n")
 end
 
+function table_size(t)
+    local size = 0
+    for _ in pairs(t) do
+        size = size + 1
+    end
+    return size
+end
+
 --- Loads Factorio data files from a list of mods.
 -- executes all module loaders (data.lua),
 -- they do some stuff and extend the global variable "data",
