@@ -42,6 +42,7 @@ function Loader.load_data(game_path, mod_dir)
                 local info = ZipModule.new(mod_dir, string.sub(filename, 1, -5))
                 module_info[mod_name] = info
             else
+                error("Loading unzipped mods is not supported at the moment.")
             end
         end
     end
