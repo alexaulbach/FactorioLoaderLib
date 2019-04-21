@@ -1,12 +1,12 @@
 local Loader = {}
 
+require("library/factorioglobals")
+
 JSON = require("externals/JSON") -- needed for the info.json-file
 
 require("lfs")
 require("zip")
 
-defines = require("library/defines")
-serpent = require("externals/serpent")
 local CFGParser = require("library/cfgparser")
 local SettingLoader = require("library/settingloader")
 local ZipModLoader = require("library/ZipModLoader")
@@ -14,18 +14,6 @@ mods = {}
 
 function endswith(s, sub)
     return string.sub(s, -string.len(sub)) == sub
-end
-
-function log(s)
-    io.stderr:write(s .. "\n")
-end
-
-function table_size(t)
-    local size = 0
-    for _ in pairs(t) do
-        size = size + 1
-    end
-    return size
 end
 
 --- Loads Factorio data files from a list of mods.
