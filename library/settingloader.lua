@@ -87,7 +87,7 @@ function SettingLoader.load(filename)
         map = SettingLoader.readUshort(f)
     }
     if (version.major == 0 and version.minor >= 17) or version.major >= 1 then
-        -- read extranous byte present since 0.17
+        -- ignore extranous byte present since 0.17
         readAll(f, 1)
     end
     local settings = SettingLoader.readPropertyTree(f, 0)
