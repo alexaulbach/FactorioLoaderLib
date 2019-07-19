@@ -18,6 +18,10 @@ function SettingLoader.readBool(f)
     return SettingLoader.readByte(f) == 1
 end
 
+function SettingLoader.readUshort(f)
+    return string.unpack("<I2", readAll(f, 2))
+end
+
 function SettingLoader.readInt(f)
     return string.unpack("<i4", readAll(f, 4))
 end
@@ -70,9 +74,22 @@ end
 function SettingLoader.load(filename)
     local f = io.open(filename, "rb")
     if f == nil then
-        return {}
+        return {
+            ["startup"] = {},
+            ["runtime-global"] = {},
+            ["runtime-per-user"] = {}
+        }
     end
-    local version = readAll(f, 8)
+    local version = {
+        major = SettingLoader.readUshort(f),
+        minor = SettingLoader.readUshort(f),
+        patch = SettingLoader.readUshort(f),
+        map = SettingLoader.readUshort(f)
+    }
+    if (version.major == 0 and version.minor >= 17) or version.major >= 1 then
+        -- ignore extranous byte present since 0.17
+        readAll(f, 1)
+    end
     local settings = SettingLoader.readPropertyTree(f, 0)
     f:close()
     return settings

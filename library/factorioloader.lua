@@ -1,21 +1,19 @@
 local Loader = {}
 
+require("library/factorioglobals")
+
 JSON = require("externals/JSON") -- needed for the info.json-file
 
 require("lfs")
 require("zip")
 
-defines = require("library/defines")
 local CFGParser = require("library/cfgparser")
 local SettingLoader = require("library/settingloader")
+local ZipModLoader = require("library/ZipModLoader")
 mods = {}
 
 function endswith(s, sub)
     return string.sub(s, -string.len(sub)) == sub
-end
-
-function log(s)
-    io.stderr:write(s .. "\n")
 end
 
 --- Loads Factorio data files from a list of mods.
@@ -44,6 +42,7 @@ function Loader.load_data(game_path, mod_dir)
                 local info = ZipModule.new(mod_dir, string.sub(filename, 1, -5))
                 module_info[mod_name] = info
             else
+                error("Loading unzipped mods is not supported at the moment.")
             end
         end
     end
@@ -115,7 +114,7 @@ end
 
 function dep_base(dep)
     dep = string.gsub(dep, "^%?%s+", "")
-    local i = string.find(dep, " ")
+    local i = string.find(dep, "%s*[=><].*")
     if i == nil then
         return dep
     end
@@ -158,6 +157,10 @@ local function getDeps(module_info, name)
     if not mod then io.stderr:write(name .. "\n") end
     if mod.deps then
         return mod.deps
+    end
+    if not mod.dependencies then
+        -- no dependencies were declared in info.json
+        mod.dependencies = {}
     end
     local deps = {}
     --table.insert(deps, mod)
@@ -233,34 +236,6 @@ function Module:locale(locales)
             end
         end
     end
-end
-
-local ZipModLoader = {}
-ZipModLoader.__index = ZipModLoader
-function ZipModLoader.new(dirname, mod_name, arc_subfolder)
-    local filename = dirname .. mod_name .. ".zip"
-    local arc = assert(zip.open(filename))
-    local mod = {
-        mod_name = mod_name .. "/",
-        archive = arc,
-        archive_name = filename,
-        arc_subfolder = arc_subfolder,
-    }
-    return setmetatable(mod, ZipModLoader)
-end
-function ZipModLoader:__call(name)
-    name = string.gsub(name, "%.", "/")
-    local filename = self.arc_subfolder .. name .. ".lua"
-    local file = self.archive:open(filename)
-    if not file then
-        return "Not found: " .. filename .. " in " .. self.archive_name
-    end
-    local content = file:read("*a")
-    file:close()
-    return load(content, filename)
-end
-function ZipModLoader:close()
-    self.archive:close()
 end
 
 ZipModule = {}
