@@ -114,6 +114,7 @@ end
 
 function dep_base(dep)
     dep = string.gsub(dep, "^%?%s+", "")
+    dep = string.gsub(dep, "^%!%s+", "")
     local i = string.find(dep, "%s*[=><].*")
     if i == nil then
         return dep
@@ -166,11 +167,20 @@ local function getDeps(module_info, name)
     --table.insert(deps, mod)
     for _, raw_dep in ipairs(mod.dependencies) do
         local dep = dep_base(raw_dep)
-        local required = string.sub(raw_dep, 1, 1) ~= "?"
-        if not module_info[dep] and required then
+	local flag = string.sub(raw_dep, 1, 1)
+        local optional = flag == "?"
+	local conflicts = flag == "!"
+	local exists = module_info[dep] ~= nil
+	if conflicts then
+		if exists then
+			io.stderr:write( "error in module '", name, "': conflicts with '", dep, "'\n")
+			return {}
+		end
+	elseif not optional and not exists then
+	    io.stderr:write( "error in module '", name, "': missing dependency: ", dep, "\n")
             return {}
         end
-        if module_info[dep] then
+        if exists then
             local subdeps = getDeps(module_info, dep)
             mergeOrders(deps, subdeps)
         end
