@@ -6,7 +6,7 @@
 -- Convert Lua-data-structure to XML
 --
 -- Parameters:
--- PrintData.lua [output=json(default)|xml|lua] -p path-to-data-directory [path...]
+-- PrintData.lua [output=json(default)|xml|lua]] -p path-to-data-directory [path...]
 --
 -- By default, the first path MUST be the factrio-core-data-directory, then base and other modules.
 -- Example:
@@ -132,18 +132,20 @@ end
 local options = {
     output = 'json',
     game_path = ".",
-    mod_path = (os.getenv("APPDATA") or ".") .. "/Factorio/mods"
+    mod_path = (os.getenv("APPDATA") or (os.getenv("HOME") .. "/Library/ApplicationSupport") or ".") .. "/factorio/mods"
 }
+
+io.write("HUHI" .. options.mod_path);
 
 --- read paths and other arguments ("name=value" - style)
 -- uses the global options-variable, see above.
 function parseArgs()
     local a
     local m, n
-    local overwrite = true
+
     for i = 1, #arg do
         a = arg[i]
-        m, n = a:match('([^=]+)=([^=]+)')
+        m, n = a:match('([^=]+)=(.+)')
         if m then
             if n == 'true' then
                 n = true
@@ -154,11 +156,6 @@ function parseArgs()
         else
             -- if none argument given assume it as path
             -- assume, that if one path is given remove default paths
-            -- if  overwrite then
-            --    options.paths = {}
-            --    overwrite = false
-            -- end
-            -- options.paths[#options.paths + 1] = a
             options.game_path = a
         end
     end
@@ -206,13 +203,9 @@ rewriteFunctionsFromData()
 
 -- and print the data
 if options.output == 'xml' then
-    -- print(toXml(data))
     print(toXml(data.raw))
 elseif options.output == 'json' then
-    -- print(JSON:encode(data, nil, {pretty = true, indent = '  '}))
     print(JSON:encode(data.raw, nil, {pretty = true, indent = '  '}))
 elseif options.output == 'lua' or options.output == 'raw' then
-    -- print(inspect(data))
     print(inspect(data.raw))
 end
-

@@ -1,21 +1,19 @@
 local Loader = {}
 
-JSON = (loadfile "externals/JSON.lua")() -- needed for the info.json-file
+require("library/factorioglobals")
+
+JSON = require("externals/JSON") -- needed for the info.json-file
 
 require("lfs")
 require("zip")
 
-defines = require("library/defines")
+local CFGParser = require("library/cfgparser")
 local SettingLoader = require("library/settingloader")
+local ZipModLoader = require("library/ZipModLoader")
 mods = {}
-
 
 function endswith(s, sub)
     return string.sub(s, -string.len(sub)) == sub
-end
-
-function log(s)
-    io.stderr:write(s .. "\n")
 end
 
 --- Loads Factorio data files from a list of mods.
@@ -44,6 +42,7 @@ function Loader.load_data(game_path, mod_dir)
                 local info = ZipModule.new(mod_dir, string.sub(filename, 1, -5))
                 module_info[mod_name] = info
             else
+                error("Loading unzipped mods is not supported at the moment.")
             end
         end
     end
@@ -51,10 +50,16 @@ function Loader.load_data(game_path, mod_dir)
     module_info = Loader.moduleInfoCompatibilityPatches(module_info)
 
     order = Loader.dependenciesOrder(module_info)
-    showtable(order)
 
     for _, module_name in ipairs(order) do
         mods[module_name] = module_info[module_name].version
+    end
+
+    -- load locale data
+    local locales = {}
+    for _, module_name in ipairs(order) do
+        local info = module_info[module_name]
+        info:locale(locales)
     end
 
     -- loop over all order
@@ -89,6 +94,7 @@ function Loader.load_data(game_path, mod_dir)
         new_info[module_name] = module_info[module_name]
     end
     data.raw['module_info'] = new_info
+    return locales
 end
 
 function showtable(t, indent)
@@ -108,7 +114,8 @@ end
 
 function dep_base(dep)
     dep = string.gsub(dep, "^%?%s+", "")
-    local i = string.find(dep, " ")
+    dep = string.gsub(dep, "^%!%s+", "")
+    local i = string.find(dep, "%s*[=><].*")
     if i == nil then
         return dep
     end
@@ -116,7 +123,7 @@ function dep_base(dep)
 end
 
 function Loader.getModList(mod_dir)
-    local f = io.open(mod_dir .. "/mod-list.json")
+    local f = assert(io.open(mod_dir .. "/mod-list.json"))
     local s = f:read("*a")
     local modlist = JSON:decode(s)
     f:close()
@@ -152,15 +159,28 @@ local function getDeps(module_info, name)
     if mod.deps then
         return mod.deps
     end
+    if not mod.dependencies then
+        -- no dependencies were declared in info.json
+        mod.dependencies = {}
+    end
     local deps = {}
     --table.insert(deps, mod)
     for _, raw_dep in ipairs(mod.dependencies) do
         local dep = dep_base(raw_dep)
-        local required = string.sub(raw_dep, 1, 1) ~= "?"
-        if not module_info[dep] and required then
+	local flag = string.sub(raw_dep, 1, 1)
+        local optional = flag == "?"
+	local conflicts = flag == "!"
+	local exists = module_info[dep] ~= nil
+	if conflicts then
+		if exists then
+			io.stderr:write( "error in module '", name, "': conflicts with '", dep, "'\n")
+			return {}
+		end
+	elseif not optional and not exists then
+	    io.stderr:write( "error in module '", name, "': missing dependency: ", dep, "\n")
             return {}
         end
-        if module_info[dep] then
+        if exists then
             local subdeps = getDeps(module_info, dep)
             mergeOrders(deps, subdeps)
         end
@@ -171,7 +191,12 @@ end
 
 function Loader.dependenciesOrder(module_info)
     local order = {}
+    local mod_names = {}
     for name, _ in pairs(module_info) do
+        table.insert(mod_names, name)
+    end
+    table.sort(mod_names)
+    for _, name in ipairs(mod_names) do
         local suborder = getDeps(module_info, name)
         mergeOrders(order, suborder)
     end
@@ -194,32 +219,33 @@ function Module:run(filename)
     dofile(file_path)
     package.path = old_path
 end
-
-local ZipModLoader = {}
-ZipModLoader.__index = ZipModLoader
-function ZipModLoader.new(dirname, mod_name)
-    local filename = dirname .. mod_name .. ".zip"
-    local arc = zip.open(filename)
-    local mod = {
-        mod_name = mod_name .. "/",
-        archive = arc,
-        archive_name = filename,
-    }
-    return setmetatable(mod, ZipModLoader)
-end
-function ZipModLoader:__call(name)
-    name = string.gsub(name, "%.", "/")
-    local filename = self.mod_name .. name .. ".lua"
-    local file = self.archive:open(filename)
-    if not file then
-        return "Not found: " .. filename .. " in " .. self.archive_name
+function Module:locale(locales)
+    local locale_dir = self.localPath .. "/locale"
+    if lfs.attributes(locale_dir, "mode") ~= "directory" then
+        return
     end
-    local content = file:read("*a")
-    file:close()
-    return load(content, filename)
-end
-function ZipModLoader:close()
-    self.archive:close()
+    for locale in lfs.dir(locale_dir) do
+        if locale ~= "." and locale ~= ".." then
+            local d = locale_dir .. "/" .. locale
+            -- ignore non-directories
+            if lfs.attributes(d, "mode") == "directory" then
+                local locale_table = locales[locale]
+                if locale_table == nil then
+                    locale_table = {}
+                    locales[locale] = locale_table
+                end
+                for filename in lfs.dir(d) do
+                    if filename ~= "." and filename ~= ".." then
+                        if filename:sub(-4):lower() == ".cfg" then
+                            local f = assert(io.open(d .. "/" .. filename, "r"))
+                            CFGParser.parse(f, locale_table)
+                            f:close()
+                        end
+                    end
+                end
+            end
+        end
+    end
 end
 
 ZipModule = {}
@@ -232,27 +258,56 @@ function ZipModule.new(dirname, mod_name)
         dirname = dirname .. "/"
     end
     local filename = dirname .. mod_name .. ".zip"
-    local arc = zip.open(filename)
-    local info_filename = mod_name .. "/info.json"
-    local f = arc:open(mod_name .. "/info.json")
+    local arc = assert(zip.open(filename))
+    local arc_subfolder
+
+    for file in arc:files() do
+        local idx_start, _ = string.find(file.filename, "info.json", 1, true)
+        if idx_start ~= nil then
+            arc_subfolder = string.sub(file.filename, 1, idx_start-1)
+            break
+        end
+    end
+    local info_filename = arc_subfolder .. "info.json"
+    local f = arc:open(info_filename)
     local info = JSON:decode(f:read("*a"))
     info.mod_path = dirname
     info.mod_name = mod_name
     info.zip_path = filename
+    info.arc_subfolder = arc_subfolder
     setmetatable(info, ZipModule)
     return info
 end
 function ZipModule.run(self, filename)
-    local loader = ZipModLoader.new(self.mod_path, self.mod_name)
+    local loader = ZipModLoader.new(self.mod_path, self.mod_name, self.arc_subfolder)
     table.insert(package.searchers, 1, loader)
     local mod = loader(filename)
     if type(mod) == "string" then
+        table.remove(package.searchers, 1)
         loader:close()
         return
     end
     if mod ~= nil then mod() end
     table.remove(package.searchers, 1)
     loader:close()
+end
+function ZipModule:locale(locales)
+    local arc = assert(zip.open(self.zip_path))
+    local pattern = "^" .. self.arc_subfolder .. "locale/([^/]+)/.+%.cfg$"
+    for info in arc:files() do
+        local locale = info.filename:match(pattern)
+        if locale ~= nil then
+            local locale_table = locales[locale]
+            if locale_table == nil then
+                locale_table = {}
+                locales[locale] = locale_table
+            end
+            local f = arc:open(info.filename)
+            CFGParser.parse(f, locale_table)
+            f:close()
+        end
+    end
+    arc:close()
 end
 
 --- add the info.json as to the data-struct, if available
