@@ -9,6 +9,18 @@ This has/will have the following features:
 - adding a "header" information about the used modules, date and (relative) paths where it was read from
 - some kind of BTN-unit-tests
 
+## Installation ##
+
+Needs installed lfs and zip.
+
+> luarocks install luafilesystem
+> luarocks install luazip
+
+On Mac luazip needs the zlib to be installed:
+> brew install libzzip
+
+All other dependencies come with the package.
+
 ## Usage ##
 
 This is intended to be used inside of your own Lua-script (or any other program) to get the basic-data you need to make your own calculations with it!
