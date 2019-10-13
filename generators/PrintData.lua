@@ -132,7 +132,7 @@ end
 local options = {
     output = 'json',
     game_path = ".",
-    mod_path = os.getenv("APPDATA") .. "/Factorio/mods"
+    mod_path = (os.getenv("APPDATA") or ".") .. "/Factorio/mods"
 }
 
 --- read paths and other arguments ("name=value" - style)
