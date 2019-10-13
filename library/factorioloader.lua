@@ -177,7 +177,7 @@ end
 -- @params string path
 -- @return string - the basename
 function Loader.basename(path)
-    local name = string.gsub(path, "(.*/)(.*)", "%2")
+    local name = string.gsub(path, "(.*[/\\])(.*)", "%2")
     return name
 end
 
