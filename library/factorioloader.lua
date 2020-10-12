@@ -167,9 +167,8 @@ local function getDeps(module_info, name)
     --table.insert(deps, mod)
     for _, raw_dep in ipairs(mod.dependencies) do
         local dep = dep_base(raw_dep)
-	local flag = string.sub(raw_dep, 1, 1)
-        local optional = flag == "?"
-	local conflicts = flag == "!"
+        local optional = string.sub(raw_dep, 1, 1) == "?" or string.sub(raw_dep, 1, 3) == "(?)"
+        local conflicts = string.sub(raw_dep, 1, 1) == "!"
 	local exists = module_info[dep] ~= nil
 	if conflicts then
 		if exists then
